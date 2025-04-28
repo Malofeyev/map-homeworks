@@ -5,7 +5,21 @@
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <cstdlib>
+#endif
+
 using namespace std::chrono_literals;
+
+void clearConsole() {
+    #ifdef _WIN32
+        system("cls");  // Windows
+    #else
+        system("clear"); // Linux/MacOS
+    #endif
+}
 
 void work(std::atomic_int& work_cnt) {
     while (work_cnt.load(std::memory_order::memory_order_acquire) > 0) {
@@ -54,6 +68,7 @@ int main(int argc, char *argv[]) {
     bool is_finished = false;
     int normalized_cnt = 20;
     while (!is_finished) {
+        clearConsole();
         is_finished = true;
         for (int i = 0; i < thread_cnt; i++) {
             print_head(i, threads[i]);
@@ -84,6 +99,7 @@ int main(int argc, char *argv[]) {
         threads[i].join();
     }
 
+    clearConsole();
     for (int i = 0; i < thread_cnt; i++) {
         print_head(i, threads[i]);
         std::cout << "Time: " << durations[i].count() << '\n';
