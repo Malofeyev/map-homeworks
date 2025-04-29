@@ -8,26 +8,25 @@
 
 using namespace std::chrono_literals;
 
-constexpr int SIZE = 10;
+constexpr int SIZE = 50;
 using Iter = std::array<int, SIZE>::iterator;
 
 template<class ForwardIt, class UnaryFunc>
-void for_each(ForwardIt first, ForwardIt last, UnaryFunc f) {
+void parallel_for_each(ForwardIt first, ForwardIt last, UnaryFunc f) {
+    const int MIN_BATCH_SIZE = 10;
     auto size = std::distance(first, last);
-    if (size == 0) {
-        return; 
-    } else if (size == 1) {
-        f(*first);
+    
+    if (size < MIN_BATCH_SIZE) {
+        std::for_each(first, last, f);
     } else {
         auto mid = first + size / 2;
-        std::packaged_task<void(ForwardIt, ForwardIt, UnaryFunc)> task1(for_each<ForwardIt, UnaryFunc>);
-        std::packaged_task<void(ForwardIt, ForwardIt, UnaryFunc)> task2(for_each<ForwardIt, UnaryFunc>);
-        std::future<void> f1 = task1.get_future();
-        std::future<void> f2 = task2.get_future();
 
-        task1(first, mid, f);
+        std::packaged_task<void(ForwardIt, ForwardIt, UnaryFunc)> task2(parallel_for_each<ForwardIt, UnaryFunc>);
+        std::future<void> f2 = task2.get_future();
         task2(mid, last, f);
-        f1.get();
+        
+        parallel_for_each(first, mid, f);
+        
         f2.get();
     }
 
@@ -46,7 +45,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << std::endl;
 
-    for_each(arr.begin(), arr.end(), [](int& e) { e--; });
+    parallel_for_each(arr.begin(), arr.end(), [](int& e) { e--; });
 
 
     for (int e : arr) {
